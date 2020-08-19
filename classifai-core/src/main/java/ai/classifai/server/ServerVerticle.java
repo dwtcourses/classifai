@@ -601,6 +601,19 @@ public class ServerVerticle extends AbstractVerticle
     {
         Router router = Router.router(vertx);
 
+        //router.route().handler(CorsHandler.create(".*.")); //note the "." surrounding "*"
+
+        router.route().handler(io.vertx.ext.web.handler.CorsHandler.create(".*.")
+                .allowedMethod(io.vertx.core.http.HttpMethod.GET)
+                .allowedMethod(io.vertx.core.http.HttpMethod.POST)
+                .allowedMethod(io.vertx.core.http.HttpMethod.OPTIONS)
+                .allowedMethod(io.vertx.core.http.HttpMethod.PUT)
+                //.allowCredentials(true)
+                .allowedHeader("Access-Control-Allow-Method")
+                .allowedHeader("Access-Control-Allow-Origin")
+                //.allowedHeader("Access-Control-Allow-Credentials")
+                .allowedHeader("Content-Type"));
+
         //display for content in webroot
         router.route().handler(StaticHandler.create());
 
