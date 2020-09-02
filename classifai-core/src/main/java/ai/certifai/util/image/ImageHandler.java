@@ -32,6 +32,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,6 +40,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class ImageHandler {
 
+    private static File tifImageBuffer;
+
+    static
+    {
+        tifImageBuffer = new File(System.getProperty("java.io.tmpdir") + "/temp.png");
+    }
     private static String getImageHeader(String input)
     {
         Integer lastIndex = input.length();
@@ -57,6 +64,28 @@ public class ImageHandler {
         }
 
         log.error("File format not supported");
+        return null;
+    }
+
+    public static String getExtensionByStringHandling(String filename) {
+        return Optional.ofNullable(filename)
+                .filter(f -> f.contains("."))
+                .map(f -> f.substring(filename.lastIndexOf(".") + 1)).orElse("");
+    }
+
+    private static String tif4Display(File file)
+    {
+        try
+        {
+            BufferedImage image = ImageIO.read(file);
+            ImageIO.write(image, "png", tifImageBuffer);
+
+            return base64FromBufferedImage(ImageIO.read(tifImageBuffer));
+        }
+        catch(Exception e)
+        {
+            log.info("Failed in preparing tif image for display", e);
+        }
         return null;
     }
 
@@ -136,17 +165,27 @@ public class ImageHandler {
     {
         try
         {
-            String encodedfile = null;
+            String extension = getExtensionByStringHandling(file.getAbsolutePath());
 
-            FileInputStream fileInputStreamReader = new FileInputStream(file);
+            if(extension.equals("tif") || (extension.equals("tiff")))
+            {
+                return tif4Display(file);
+            }
+            else
+            {
+                String encodedfile = null;
 
-            byte[] bytes = new byte[(int)file.length()];
+                FileInputStream fileInputStreamReader = new FileInputStream(file);
 
-            fileInputStreamReader.read(bytes);
+                byte[] bytes = new byte[(int)file.length()];
 
-            encodedfile = new String(Base64.getEncoder().encode(bytes));
+                fileInputStreamReader.read(bytes);
 
-            return getImageHeader(file.getAbsolutePath()) + encodedfile;
+                encodedfile = new String(Base64.getEncoder().encode(bytes));
+
+                return getImageHeader(file.getAbsolutePath()) + encodedfile;
+            }
+
         }
         catch(Exception e)
         {
