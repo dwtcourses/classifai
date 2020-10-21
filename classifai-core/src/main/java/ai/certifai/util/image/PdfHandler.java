@@ -17,15 +17,21 @@
 package ai.certifai.util.image;
 
 import ai.certifai.data.type.image.ImageFileType;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.tools.imageio.ImageIOUtil;
 
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 @Slf4j
@@ -33,6 +39,8 @@ public class PdfHandler
 {
     private static String PDFFORMAT = "pdf";
     private static final Integer MAX_ALLOWED_PAGES = 20; //only allow max 20 pages per document
+
+    //FIXME: move to general config
     private static Integer dotsPerInch = 300; //standard dots per inch is 300
 
     public static boolean isPdf(String pdfFileName)
@@ -64,8 +72,8 @@ public class PdfHandler
         Integer pathLength = pdfFileName.length() - fullPathName.length();
         String pathToSave = pdfFileName.substring(0, pathLength);
 
-        fileName = fileName.replace(".", "_"); //replace any possible "." with "_"
-        fileName = fileName.replace(" ", ""); //replace any possible " " with ""
+        //fileName = fileName.replace(".", "_"); //replace any possible "." with "_"
+        //fileName = fileName.replace(" ", ""); //replace any possible " " with ""
 
         String pathFirstHalf = pathToSave + fileName;
 
@@ -74,8 +82,10 @@ public class PdfHandler
 
     public static List<File> savePdf2Image(String pdfFileName)
     {
+        PDDocument document = null;
+
         try {
-            PDDocument document = PDDocument.load(new File(pdfFileName));
+            document = PDDocument.load(new File(pdfFileName));
             PDFRenderer pdfRenderer = new PDFRenderer(document);
             List<File> pdf2Images = new ArrayList<>();
 
@@ -90,6 +100,8 @@ public class PdfHandler
 
                 File fImageSavedFullPath = new File(imageSavedFullPath);
 
+                System.out.println("PDF Debugging: " + fImageSavedFullPath);
+
                 if(fImageSavedFullPath.exists() == false)
                 {
                     BufferedImage bim = pdfRenderer.renderImageWithDPI(page, dotsPerInch, ImageType.RGB); //do it needs to be ImageType.COLOR or GRAY?
@@ -97,13 +109,29 @@ public class PdfHandler
                     if((bim.getWidth() > ImageFileType.getMaxWidth()) || (bim.getHeight() > ImageFileType.getMaxHeight()))
                     {
                         document.close();
-                        throw new Exception("Image width and/or height bigger than " + ImageFileType.getMaxHeight());
+
+                        String errorMessage = "Image width and/or height bigger than " + ImageFileType.getMaxHeight();
+                        log.info(errorMessage);
+                        throw new Exception(errorMessage);
                     }
 
-                    pdf2Images.add(fImageSavedFullPath);
-
                     // suffix in filename will be used as the file format
-                    ImageIOUtil.writeImage(bim, imageSavedFullPath, dotsPerInch);
+                    boolean bSavedSuccess = ImageIOUtil.writeImage(bim, imageSavedFullPath, dotsPerInch);
+
+                    if(!bSavedSuccess)
+                    {
+                        String errorMessage = "Save PDF image failed: " + fImageSavedFullPath;
+                        log.info(errorMessage);
+                        throw new Exception(errorMessage);
+                    }
+                    else
+                    {
+                        pdf2Images.add(fImageSavedFullPath);
+                    }
+                }
+                else
+                {
+                    pdf2Images.add(fImageSavedFullPath);
                 }
             }
 
@@ -115,6 +143,17 @@ public class PdfHandler
         {
             log.info("PDF Skipped. Failed to read in pdf: " + pdfFileName);
             log.debug("Error: ", e);
+        }
+        finally
+        {
+            try
+            {
+                if(document != null) document.close();
+            }
+            catch(IOException error)
+            {
+                log.info("Error when closing pdf document: ", error.getMessage());
+            }
         }
 
         return null;

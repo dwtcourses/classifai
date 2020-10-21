@@ -40,12 +40,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class ImageHandler {
 
-    private static File tifImageBuffer;
-
-    static
-    {
-        tifImageBuffer = new File(System.getProperty("java.io.tmpdir") + "/temp.png");
-    }
     private static String getImageHeader(String input)
     {
         Integer lastIndex = input.length();
@@ -71,22 +65,6 @@ public class ImageHandler {
         return Optional.ofNullable(filename)
                 .filter(f -> f.contains("."))
                 .map(f -> f.substring(filename.lastIndexOf(".") + 1)).orElse("");
-    }
-
-    private static String tif4Display(File file)
-    {
-        try
-        {
-            BufferedImage image = ImageIO.read(file);
-            ImageIO.write(image, "png", tifImageBuffer);
-
-            return base64FromBufferedImage(ImageIO.read(tifImageBuffer));
-        }
-        catch(Exception e)
-        {
-            log.info("Failed in preparing tif image for display", e);
-        }
-        return null;
     }
 
     private static String base64FromBufferedImage(BufferedImage img) {
@@ -165,26 +143,17 @@ public class ImageHandler {
     {
         try
         {
-            String extension = getExtensionByStringHandling(file.getAbsolutePath());
+            String encodedfile = null;
 
-            if(extension.equals("tif") || (extension.equals("tiff")))
-            {
-                return tif4Display(file);
-            }
-            else
-            {
-                String encodedfile = null;
+            FileInputStream fileInputStreamReader = new FileInputStream(file);
 
-                FileInputStream fileInputStreamReader = new FileInputStream(file);
+            byte[] bytes = new byte[(int)file.length()];
 
-                byte[] bytes = new byte[(int)file.length()];
+            fileInputStreamReader.read(bytes);
 
-                fileInputStreamReader.read(bytes);
+            encodedfile = new String(Base64.getEncoder().encode(bytes));
 
-                encodedfile = new String(Base64.getEncoder().encode(bytes));
-
-                return getImageHeader(file.getAbsolutePath()) + encodedfile;
-            }
+            return getImageHeader(file.getAbsolutePath()) + encodedfile;
 
         }
         catch(Exception e)
@@ -298,6 +267,15 @@ public class ImageHandler {
                 if(pdf2ImagePaths != null)
                 {
                     verifiedFilesList.addAll(pdf2ImagePaths);
+                }
+            }
+            else if(TifHandler.isTifFormat(currentFileFullPath))
+            {
+                java.util.List<File> tif2ImagePaths = TifHandler.saveTif2Image(currentFileFullPath);
+
+                if(tif2ImagePaths != null)
+                {
+                    verifiedFilesList.addAll(tif2ImagePaths);
                 }
             }
             else if(isImageFileValid(currentFileFullPath))
