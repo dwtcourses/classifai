@@ -105,6 +105,7 @@ public class ParamConfig
     private final static String IS_NEW = "is_new";
     private final static String IS_STARRED = "is_starred";
     private final static String IS_LOADED = "is_loaded";
+    private final static String HAS_CLOUD_CONTENT = "has_cloud_content";
     private final static String CREATED_DATE = "created_date";
 
     private final static String STATUS_PARAM = "status";
@@ -181,6 +182,7 @@ public class ParamConfig
     public static String getIsStarredParam() { return IS_STARRED; }
     public static String getIsLoadedParam() { return IS_LOADED; }
     public static String getIsNewParam() { return IS_NEW; }
+    public static String getHasCloudContent() { return HAS_CLOUD_CONTENT; }
 
     public static String getCreatedDateParam() { return CREATED_DATE; }
 

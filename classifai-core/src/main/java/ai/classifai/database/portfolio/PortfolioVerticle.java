@@ -42,6 +42,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -145,6 +146,7 @@ public class PortfolioVerticle extends AbstractVerticle implements VerticleServi
                     .add(ParamConfig.getEmptyArray()) //uuid_list
                     .add(true)                        //is_new
                     .add(false)                       //is_starred
+                    .add(false)                       //has_cloud_content
                     .add(DateTime.get());             //created_date
 
             portfolioDbClient.queryWithParams(PortfolioDbQuery.createNewProject(), params, fetch -> {
@@ -402,15 +404,18 @@ public class PortfolioVerticle extends AbstractVerticle implements VerticleServi
 
                 List<JsonObject> result = new ArrayList<>();
 
-                JsonArray row = fetch.result().getResults().get(0);
+                AtomicInteger iter = new AtomicInteger(0);
 
-                String projectName = row.getString(0);
-                List<Integer> uuidList = ConversionHandler.string2IntegerList(row.getString(1));
+                JsonArray row = fetch.result().getResults().get(iter.get());
 
-                Boolean isNew = row.getBoolean(2);
-                Boolean isStarred = row.getBoolean(3);
+                String projectName = row.getString(iter.getAndIncrement());
+                List<Integer> uuidList = ConversionHandler.string2IntegerList(row.getString(iter.getAndIncrement()));
+
+                Boolean isNew = row.getBoolean(iter.getAndIncrement());
+                Boolean isStarred = row.getBoolean(iter.getAndIncrement());
                 Boolean isLoaded = ProjectHandler.getProjectLoader(projectID).getIsLoadedFrontEndToggle();
-                String dataTime = row.getString(4);
+                Boolean hasCloudContent = row.getBoolean(iter.getAndIncrement());
+                String dataTime = row.getString(iter.get());
 
                 //project_name, uuid_list, is_new, is_starred, is_loaded, created_date
                 result.add(new JsonObject()
@@ -418,6 +423,7 @@ public class PortfolioVerticle extends AbstractVerticle implements VerticleServi
                         .put(ParamConfig.getIsNewParam(), isNew)
                         .put(ParamConfig.getIsStarredParam(), isStarred)
                         .put(ParamConfig.getIsLoadedParam(), isLoaded)
+                        .put(ParamConfig.getHasCloudContent(), hasCloudContent)
                         .put(ParamConfig.getCreatedDateParam(), dataTime)
                         .put(ParamConfig.getTotalUUIDParam(), uuidList.size()));
 
@@ -442,34 +448,42 @@ public class PortfolioVerticle extends AbstractVerticle implements VerticleServi
 
                 ResultSet resultSet = fetch.result();
 
+                AtomicInteger iter = new AtomicInteger(0);
+
                 List<String> projectNameList = resultSet
                         .getResults()
                         .stream()
-                        .map(json -> json.getString(0))
+                        .map(json -> json.getString(iter.getAndIncrement()))
                         .collect(Collectors.toList());
 
                 List<String> uuidList = resultSet
                         .getResults()
                         .stream()
-                        .map(json -> json.getString(1))
+                        .map(json -> json.getString(iter.getAndIncrement()))
                         .collect(Collectors.toList());
 
                 List<Boolean> isNewList = resultSet
                         .getResults()
                         .stream()
-                        .map(json -> json.getBoolean(2))
+                        .map(json -> json.getBoolean(iter.getAndIncrement()))
                         .collect(Collectors.toList());
 
                 List<Boolean> isStarredList = resultSet
                         .getResults()
                         .stream()
-                        .map(json -> json.getBoolean(3))
+                        .map(json -> json.getBoolean(iter.getAndIncrement()))
+                        .collect(Collectors.toList());
+
+                List<Boolean> hasCloudContentList = resultSet
+                        .getResults()
+                        .stream()
+                        .map(json -> json.getBoolean(iter.getAndIncrement()))
                         .collect(Collectors.toList());
 
                 List<String> dateTimeList = resultSet
                         .getResults()
                         .stream()
-                        .map(json -> json.getString(4))
+                        .map(json -> json.getString(iter.get()))
                         .collect(Collectors.toList());
 
                 List<JsonObject> result = new ArrayList<>();
@@ -487,6 +501,7 @@ public class PortfolioVerticle extends AbstractVerticle implements VerticleServi
                             .put(ParamConfig.getIsNewParam(), isNewList.get(i))
                             .put(ParamConfig.getIsStarredParam(), isStarredList.get(i))
                             .put(ParamConfig.getIsLoadedParam(), isLoaded)
+                            .put(ParamConfig.getHasCloudContent(), hasCloudContentList.get(i))
                             .put(ParamConfig.getCreatedDateParam(), dateTimeList.get(i))
                             .put(ParamConfig.getTotalUUIDParam(), total_uuid));
                 }

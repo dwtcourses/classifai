@@ -24,9 +24,9 @@ public class PortfolioDbQuery
 {
     private final static String QUEUE = "portfolio.queue";
 
-    private final static String CREATE_PORTFOLIO_TABLE = "CREATE TABLE IF NOT EXISTS Portfolio (project_id integer identity PRIMARY KEY, project_name varchar(255), annotation_type integer, label_list varchar(10000), uuid_generator_seed integer, uuid_list varchar(65535), is_new boolean, is_starred boolean, created_date varchar(255))";
+    private final static String CREATE_PORTFOLIO_TABLE = "CREATE TABLE IF NOT EXISTS Portfolio (project_id integer identity PRIMARY KEY, project_name varchar(255), annotation_type integer, label_list varchar(10000), uuid_generator_seed integer, uuid_list varchar(65535), is_new boolean, is_starred boolean, has_cloud_content boolean, created_date varchar(255))";
 
-    private final static String CREATE_NEW_PROJECT = "INSERT INTO Portfolio VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    private final static String CREATE_NEW_PROJECT = "INSERT INTO Portfolio VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     private final static String UPDATE_PROJECT = "UPDATE Portfolio SET uuid_list = ? WHERE project_id = ?";
 
@@ -47,9 +47,9 @@ public class PortfolioDbQuery
     private final static String GET_ALL_PROJECTS_FOR_ANNOTATION_TYPE = "SELECT project_name FROM Portfolio WHERE annotation_type = ?";
 
     //V2
-    private final static String GET_PROJECT_METADATA = "SELECT project_name, uuid_list, is_new, is_starred, created_date FROM Portfolio WHERE project_id = ?";
+    private final static String GET_PROJECT_METADATA = "SELECT project_name, uuid_list, is_new, is_starred, has_cloud_content, created_date FROM Portfolio WHERE project_id = ?";
 
-    private final static String GET_ALL_PROJECTS_METADATA = "SELECT project_name, uuid_list, is_new, is_starred, created_date FROM Portfolio WHERE annotation_type = ?";
+    private final static String GET_ALL_PROJECTS_METADATA = "SELECT project_name, uuid_list, is_new, is_starred, has_cloud_content, created_date FROM Portfolio WHERE annotation_type = ?";
 
     private final static String UPDATE_IS_NEW_PARAM = "UPDATE Portfolio SET is_new = ? WHERE project_id = ?";
 
